@@ -16,7 +16,7 @@ services:
       - ./docker/pretix/crontab:/tmp/crontab
     ports:
       - "81:80"
-      - "443:443"
+      - "444:443"
     networks:
       - backend
 
