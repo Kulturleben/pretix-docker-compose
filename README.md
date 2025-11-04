@@ -1,35 +1,141 @@
-# Pretix Docker-Compose setup
-The repository includes a [Pretix](https://pretix.eu/about/de/) docker-compose configuration for local development.
+# Pretix Docker Compose Setup
 
-## Usage
+## Project Overview
 
-You can execute `docker-compose up -d --build --force-recreate` to start and build all related containers.
+This repository contains a Docker Compose configuration for running [Pretix](https://pretix.eu/about/de/), an open-source ticket shop system, in a containerized environment. The setup includes all necessary services to run Pretix locally for development purposes, including the application server, PostgreSQL database, and Redis cache.
 
-### Version information
+### Architecture
 
-| **Version** |                         **Description**                          |
-|:-----------:|:----------------------------------------------------------------:|
-|    1.2.0    |                      Includes PostgreSQL 17                      |
-|    1.1.1    | Update the Alpine version and the allocated IPs of the databases |
-|    1.1.0    |                      Includes PostgreSQL 16                      |
-|    1.0.0    |                      Includes PostgreSQL 13                      |
+The setup consists of three main services:
 
-### Cronjobs
+1. **app** - The main Pretix application container built from the official `pretix/standalone:stable` image
+2. **database** - PostgreSQL 17 database container for storing application data
+3. **cache** - Redis container for caching and session storage
 
-It is possible to adapt the `pretixuser` crontab entries by modifying the [crontab](docker/pretix/crontab) file.
+### Key Components
 
-## TLS setup
+- **Docker Compose** - Orchestrates all services and their networking
+- **PostgreSQL** - Main database for storing Pretix data (version 17)
+- **Redis** - Caching and session storage
+- **Cron Jobs** - Automated periodic tasks for maintenance
 
-You can specify the used TLS certificates by adapting the mounted [certificate](docker/pretix/files/config/ssl/domain.crt) and [key](docker/pretix/files/config/ssl/domain.key) e.g. from Let's Encrypt or generating new self-signed certificates by following the [manual](scripts/EXAMPLE-CERT-CREATION.md) and moving the generated files. It is also possible to adapt the [used](docker/pretix/nginx/nginx.conf) Nginx configuration. 
+## Building and Running
 
-## Contribution
-If you would like to contribute something, have an improvement request, or want to make a change inside the code, please open a pull request.
+### Prerequisites
 
-## Support
-If you need support, or you encounter a bug, please don't hesitate to open an issue.
+- Docker
+- Docker Compose
 
-## Donations
-If you want to support my work, I ask you to take an unusual action inside the open source community. Donate the money to a non-profit organization like Doctors Without Borders or the Children's Cancer Aid. I will continue to build tools because I like them, and I am passionate about developing and sharing applications.
+### Starting the Services
+
+To start and build all related containers:
+
+```bash
+docker-compose up -d --build --force-recreate
+```
+
+### Ports
+
+- **Port 80** - HTTP access to the Pretix application (when running without Nginx)
+- **Port 5432** - PostgreSQL database (for direct access)
+- **Port 6379** - Redis cache (for direct access)
+
+## Configuration
+
+### Application Configuration
+
+The main Pretix configuration is in `docker/pretix/pretix.cfg`:
+
+- Instance name: localhost
+- Database connection to the PostgreSQL service
+- Redis caching configuration
+- Email settings (requires customization for proper email functionality)
+
+### Cron Jobs
+
+Periodic tasks are configured in `docker/pretix/crontab`:
+- Runs `pretix runperiodic` every hour at 15 and 45 minutes past the hour
+
+### Volumes
+
+- `pretix_data` - Persistent storage for Pretix data and media files
+- `postgres_data` - Persistent storage for the PostgreSQL database
+
+## Deployment on Dokploy
+
+This repository has been configured to be deployable on [Dokploy](https://dokploy.com), an open-source self-hosted platform for container deployments. The setup now uses Dokploy's default Traefik reverse proxy instead of Nginx.
+
+### Dokploy Deployment Steps
+
+1. **Prepare environment variables**:
+   - Copy `.env.example` to `.env` and adjust the values according to your environment
+   - Add the environment variables in your Dokploy project settings
+
+2. **Docker Compose Configuration**:
+   - Use `docker-compose.dokploy.yml` for deployment on Dokploy
+   - This configuration removes port bindings to work with Dokploy's reverse proxy
+   - Includes Traefik labels for automatic routing and SSL termination
+
+3. **Deploy on Dokploy**:
+   - Add a new project in Dokploy
+   - Select "Docker Compose" as the project type
+   - Paste the contents of `docker-compose.dokploy.yml` in the compose field
+   - Add environment variables from your `.env` file in the environment variables section
+   - Set the DOMAIN environment variable to your desired domain name
+
+4. **Required Environment Variables**:
+   ```env
+   POSTGRES_DB=pretix
+   POSTGRES_USER=pretix
+   POSTGRES_PASSWORD=pretix
+   EMAIL_HOST=smtp.example.com
+   EMAIL_PORT=587
+   EMAIL_USER=your-smtp-username
+   EMAIL_PASSWORD=your-smtp-password
+   EMAIL_FROM=noreply@example.com
+   PRETIX_INSTANCE_NAME=My Event Ticket Shop
+   PRETIX_URL=https://your-domain.com
+   PRETIX_CURRENCY=EUR
+   PRETIX_DEFAULT_LOCALE=en
+   PRETIX_TIMEZONE=Europe/Berlin
+   DOMAIN=your-domain.com
+   ```
+
+### Dokploy-specific Notes
+
+- The database is exposed on port 5432 within the Dokploy network
+- The application service runs on port 80 internally
+- SSL termination and routing is handled automatically by Dokploy's Traefik proxy
+- Data persistence is managed through Dokploy's volume system
+- The configuration now includes Traefik labels for automatic service discovery
+- Nginx has been removed to leverage Dokploy's built-in proxy capabilities
+
+## Customization
+
+### Database Version
+
+The setup currently uses PostgreSQL 17 (as of version 1.2.0). Previous versions used different PostgreSQL versions.
+
+### Environment Variables
+
+The database service can be customized through environment variables in the docker-compose.yml file:
+- `POSTGRES_USER` - Database user (default: pretix)
+- `POSTGRES_PASSWORD` - Database password (default: pretix)
+
+## Development Conventions
+
+This is a Docker-based setup for Pretix, which is written in Python using the Django web framework. The repository focuses on containerization and orchestration rather than direct code modifications to Pretix itself.
+
+## Troubleshooting
+
+1. **Service startup issues**: Check that all volumes are properly created and accessible
+2. **Database connection errors**: Ensure the database service starts before the app service
+3. **SSL certificate issues**: Verify that certificates are properly mounted in the expected location
+
+## Contributing
+
+Contributions can be made by opening pull requests on the repository. The setup is designed for local development and testing of Pretix.
 
 ## License
-This product is available under the Apache 2.0 license.
+
+This project is available under the Apache 2.0 license.

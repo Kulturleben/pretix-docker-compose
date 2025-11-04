@@ -15,7 +15,6 @@ The setup consists of three main services:
 ### Key Components
 
 - **Docker Compose** - Orchestrates all services and their networking
-- **Nginx** - Handles web server functionality, SSL termination, and static file serving
 - **PostgreSQL** - Main database for storing Pretix data (version 17)
 - **Redis** - Caching and session storage
 - **Cron Jobs** - Automated periodic tasks for maintenance
@@ -37,22 +36,9 @@ docker-compose up -d --build --force-recreate
 
 ### Ports
 
-- **Port 81** - HTTP access to the Pretix application
-- **Port 444** - HTTPS access to the Pretix application
+- **Port 80** - HTTP access to the Pretix application (when running without Nginx)
 - **Port 5432** - PostgreSQL database (for direct access)
 - **Port 6379** - Redis cache (for direct access)
-
-### TLS Setup
-
-The application supports TLS certificates. You can:
-
-1. Use your own certificates by mounting them to:
-   - Certificate: `docker/pretix/files/config/ssl/domain.crt`
-   - Key: `docker/pretix/files/config/ssl/domain.key`
-
-2. Generate self-signed certificates using the script in `scripts/create-tls-certs.sh`
-
-3. Customize the Nginx configuration in `docker/pretix/nginx/nginx.conf`
 
 ## Configuration
 
@@ -75,18 +61,60 @@ Periodic tasks are configured in `docker/pretix/crontab`:
 - `pretix_data` - Persistent storage for Pretix data and media files
 - `postgres_data` - Persistent storage for the PostgreSQL database
 
+## Deployment on Dokploy
+
+This repository has been configured to be deployable on [Dokploy](https://dokploy.com), an open-source self-hosted platform for container deployments. The setup now uses Dokploy's default Traefik reverse proxy instead of Nginx.
+
+### Dokploy Deployment Steps
+
+1. **Prepare environment variables**:
+   - Copy `.env.example` to `.env` and adjust the values according to your environment
+   - Add the environment variables in your Dokploy project settings
+
+2. **Docker Compose Configuration**:
+   - Use `docker-compose.dokploy.yml` for deployment on Dokploy
+   - This configuration removes port bindings to work with Dokploy's reverse proxy
+   - Includes Traefik labels for automatic routing and SSL termination
+
+3. **Deploy on Dokploy**:
+   - Add a new project in Dokploy
+   - Select "Docker Compose" as the project type
+   - Paste the contents of `docker-compose.dokploy.yml` in the compose field
+   - Add environment variables from your `.env` file in the environment variables section
+   - Set the DOMAIN environment variable to your desired domain name
+
+4. **Required Environment Variables**:
+   ```env
+   POSTGRES_DB=pretix
+   POSTGRES_USER=pretix
+   POSTGRES_PASSWORD=pretix
+   EMAIL_HOST=smtp.example.com
+   EMAIL_PORT=587
+   EMAIL_USER=your-smtp-username
+   EMAIL_PASSWORD=your-smtp-password
+   EMAIL_FROM=noreply@example.com
+   PRETIX_INSTANCE_NAME=My Event Ticket Shop
+   PRETIX_URL=https://your-domain.com
+   PRETIX_CURRENCY=EUR
+   PRETIX_DEFAULT_LOCALE=en
+   PRETIX_TIMEZONE=Europe/Berlin
+   DOMAIN=your-domain.com
+   ```
+
+### Dokploy-specific Notes
+
+- The database is exposed on port 5432 within the Dokploy network
+- The application service runs on port 80 internally
+- SSL termination and routing is handled automatically by Dokploy's Traefik proxy
+- Data persistence is managed through Dokploy's volume system
+- The configuration now includes Traefik labels for automatic service discovery
+- Nginx has been removed to leverage Dokploy's built-in proxy capabilities
+
 ## Customization
 
 ### Database Version
 
 The setup currently uses PostgreSQL 17 (as of version 1.2.0). Previous versions used different PostgreSQL versions.
-
-### Nginx Configuration
-
-The Nginx configuration is located in `docker/pretix/nginx/nginx.conf` and can be modified to:
-- Update SSL settings
-- Customize static file handling
-- Modify proxy settings
 
 ### Environment Variables
 
