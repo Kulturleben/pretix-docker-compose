@@ -18,20 +18,9 @@ done
 # Run database migrations if needed
 python -m pretix migrate --no-input
 
-# The pretix/standalone image uses supervisor to manage services
-# Based on the Dockerfile, the crond.conf is already configured to run cron
-# So let's just ensure that the services started by supervisor are running properly
-# The pretix runperiodic command should be handled by our custom cron implementation
+# The pretix/standalone image uses supervisor to manage services appropriately
+# The supervisor configuration already includes the celery worker, cron, web server, etc.
+# So we just need to ensure the environment is set up and let supervisor handle services
 
-# Start the celery worker
-# Using the pretix command if available, otherwise fall back to celery directly
-if command -v pretix &> /dev/null; then
-    # The 'runworker' command is the correct way to start the celery worker in newer versions
-    pretix runworker &
-else
-    # Fallback to using celery directly if the pretix command doesn't support it
-    celery -A pretix.celery_app worker --loglevel=INFO -E &
-fi
-
-# Start the web server
+# Start the web server and let supervisor manage other services
 exec "$@"
