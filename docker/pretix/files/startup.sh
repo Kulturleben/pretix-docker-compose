@@ -16,13 +16,13 @@ do
 done
 
 # Run database migrations if needed
-pretix migrate --no-input
+python -m pretix migrate --no-input
 
-# Start the celery worker in the background
-python -m pretix celery worker --detach --loglevel=INFO &
+# Start the celery worker in the background using python module
+python -m pretix celery worker --loglevel=INFO &
 
-# Start the cron process in the background
-python -m pretix cron --detach --loglevel=INFO &
+# Start the cron process in the background using python module
+python -m pretix cron &
 
 # Start the web server
 exec "$@"
