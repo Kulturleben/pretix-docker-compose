@@ -14,8 +14,8 @@ RUN mv /image/supervisord/crond.conf /etc/supervisord/crond.conf && \
 # Install python3-configargparse for environment variable support
 RUN pip install configargparse
 
-# Install envsubst for environment variable substitution (Ubuntu/Debian version)
-RUN apt-get update && apt-get install -y gettext && rm -rf /var/lib/apt/lists/*
+# Install PostgreSQL client tools and gettext for environment variable substitution (Ubuntu/Debian version)
+RUN apt-get update && apt-get install -y postgresql-client gettext && rm -rf /var/lib/apt/lists/*
 
 # Copy the startup script
 COPY files/startup.sh /startup.sh
