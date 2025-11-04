@@ -35,7 +35,7 @@ services:
       - backend
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.pretix.rule=Host(`${DOMAIN:-pretix.localhost}`)"
+      - "traefik.http.routers.pretix.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.pretix.entrypoints=web,websecure"
       - "traefik.http.routers.pretix.tls=true"
       - "traefik.http.services.pretix.loadbalancer.server.port=80"
