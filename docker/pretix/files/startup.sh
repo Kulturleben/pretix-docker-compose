@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# Create a temporary pretix config file with environment variable substitution
-envsubst < /etc/pretix/pretix.cfg > /tmp/pretix.cfg
-mv /tmp/pretix.cfg /etc/pretix/pretix.cfg
+# Use Python script to substitute environment variables in config file
+python3 /image/config/config_substitute.py /etc/pretix/pretix.cfg
 
 # Wait for the database to be ready
 until pg_isready -h $PRETIX_DB_HOST -U $PRETIX_DB_USER -d $PRETIX_DB_NAME
