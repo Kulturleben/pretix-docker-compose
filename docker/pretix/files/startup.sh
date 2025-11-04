@@ -19,10 +19,10 @@ done
 pretix migrate --no-input
 
 # Start the celery worker in the background
-pretix celery worker --detach --loglevel=INFO &
+python -m pretix celery worker --detach --loglevel=INFO &
 
 # Start the cron process in the background
-pretix cron --detach --loglevel=INFO &
+python -m pretix cron --detach --loglevel=INFO &
 
 # Start the web server
 exec "$@"
