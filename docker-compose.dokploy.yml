@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      dockerfile: Dockerfile.dokploy
+      context: ./docker/pretix
+    container_name: pretix_app
+    restart: always
+    depends_on:
+      - database
+      - cache
+    volumes:
+      - pretix_data:/data
+      - ./docker/pretix/pretix.dokploy.cfg:/etc/pretix/pretix.cfg
+    environment:
+      - PRETIX_DB_HOST=database
+      - PRETIX_DB_NAME=${POSTGRES_DB:-pretix}
+      - PRETIX_DB_USER=${POSTGRES_USER:-pretix}
+      - PRETIX_DB_PASSWORD=${POSTGRES_PASSWORD:-pretix}
+      - PRETIX_REDIS_URL=redis://cache:6379/0
+      - PRETIX_CELERY_BROKER_URL=redis://cache:6379/2
+      - PRETIX_CELERY_BACKEND_URL=redis://cache:6379/1
+      - PRETIX_EMAIL_HOST=${EMAIL_HOST:-}
+      - PRETIX_EMAIL_PORT=${EMAIL_PORT:-587}
+      - PRETIX_EMAIL_USER=${EMAIL_USER:-}
+      - PRETIX_EMAIL_PASSWORD=${EMAIL_PASSWORD:-}
+      - PRETIX_EMAIL_FROM=${EMAIL_FROM:-noreply@example.com}
+      - PRETIX_INSTANCE_NAME=${PRETIX_INSTANCE_NAME:-My Event Ticket Shop}
+      - PRETIX_URL=${PRETIX_URL:-https://pretix.localhost}
+      - PRETIX_CURRENCY=${PRETIX_CURRENCY:-EUR}
+      - PRETIX_DEFAULT_LOCALE=${PRETIX_DEFAULT_LOCALE:-en}
+      - PRETIX_TIMEZONE=${PRETIX_TIMEZONE:-Europe/Berlin}
+    networks:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pretix.rule=Host(`${DOMAIN:-pretix.localhost}`)"
+      - "traefik.http.routers.pretix.entrypoints=web,websecure"
+      - "traefik.http.routers.pretix.tls=true"
+      - "traefik.http.services.pretix.loadbalancer.server.port=80"
+      - "traefik.docker.network=backend"
+
+  database:
+    image: postgres:12
+    container_name: database
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-pretix}
+      - POSTGRES_USER=${POSTGRES_USER:-pretix}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pretix}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c listen_addresses=*
+      -c max_connections=200
+    networks:
+      - backend
+
+  cache:
+    image: redis:alpine
+    container_name: redis
+    restart: always
+    command: ["redis-server", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+    driver: local
+  pretix_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  backend:
+    driver: bridge

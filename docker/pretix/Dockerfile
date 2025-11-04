@@ -9,21 +9,11 @@ ADD files /image
 COPY crontab /tmp/crontab
 
 RUN mv /image/supervisord/crond.conf /etc/supervisord/crond.conf && \
-    pip install crontab && chmod +x $IMAGE_CRON_DIR/cron.py
-
-# Install python3-configargparse for environment variable support
-RUN pip install configargparse
-
-# Install envsubst for environment variable substitution
-RUN apk add --no-cache gettext
-
-# Copy the startup script
-COPY files/startup.sh /startup.sh
-RUN chmod +x /startup.sh
+    pip install crontab && chmod 644 $IMAGE_CONFIG_DIR/ssl/*.crt && chmod +x $IMAGE_CRON_DIR/cron.py
 
 USER pretixuser
 
-EXPOSE 80
+EXPOSE 443
 
-ENTRYPOINT ["/startup.sh"]
-CMD ["pretix", "web"]
+ENTRYPOINT ["pretix"]
+CMD ["all"]

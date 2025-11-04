@@ -2,20 +2,20 @@
 
 ## Project Overview
 
-This repository contains a Docker Compose configuration for running [Pretix](https://pretix.eu/about/de/), an open-source ticket shop system, in a containerized environment. The setup includes all necessary services to run Pretix locally for development purposes, including the application server, PostgreSQL database, and Redis cache.
+This repository contains Docker Compose configurations for running [Pretix](https://pretix.eu/about/de/), an open-source ticket shop system, in containerized environments. The setup includes all necessary services to run Pretix, with different configurations for local development and production deployment on Dokploy.
 
 ### Architecture
 
 The setup consists of three main services:
 
 1. **app** - The main Pretix application container built from the official `pretix/standalone:stable` image
-2. **database** - PostgreSQL 17 database container for storing application data
+2. **database** - PostgreSQL database container for storing application data
 3. **cache** - Redis container for caching and session storage
 
 ### Key Components
 
 - **Docker Compose** - Orchestrates all services and their networking
-- **PostgreSQL** - Main database for storing Pretix data (version 17)
+- **PostgreSQL** - Main database for storing Pretix data
 - **Redis** - Caching and session storage
 - **Cron Jobs** - Automated periodic tasks for maintenance
 
@@ -26,17 +26,20 @@ The setup consists of three main services:
 - Docker
 - Docker Compose
 
-### Starting the Services
+### Starting the Services (Local Development)
 
-To start and build all related containers:
+To start and build all related containers for local development:
 
 ```bash
 docker-compose up -d --build --force-recreate
 ```
 
-### Ports
+This uses the default `docker-compose.yml` which includes Nginx and direct port mappings for local development.
 
-- **Port 80** - HTTP access to the Pretix application (when running without Nginx)
+### Ports (Local Development)
+
+- **Port 80** - HTTP access to the Pretix application
+- **Port 443** - HTTPS access to the Pretix application
 - **Port 5432** - PostgreSQL database (for direct access)
 - **Port 6379** - Redis cache (for direct access)
 
@@ -63,7 +66,7 @@ Periodic tasks are configured in `docker/pretix/crontab`:
 
 ## Deployment on Dokploy
 
-This repository has been configured to be deployable on [Dokploy](https://dokploy.com), an open-source self-hosted platform for container deployments. The setup now uses Dokploy's default Traefik reverse proxy instead of Nginx.
+This repository has been configured to be deployable on [Dokploy](https://dokploy.com), an open-source self-hosted platform for container deployments. The setup uses Dokploy's default Traefik reverse proxy for automatic routing and SSL termination.
 
 ### Dokploy Deployment Steps
 
@@ -73,8 +76,7 @@ This repository has been configured to be deployable on [Dokploy](https://dokplo
 
 2. **Docker Compose Configuration**:
    - Use `docker-compose.dokploy.yml` for deployment on Dokploy
-   - This configuration removes port bindings to work with Dokploy's reverse proxy
-   - Includes Traefik labels for automatic routing and SSL termination
+   - This configuration is optimized for Dokploy's environment with proper service discovery and Traefik integration
 
 3. **Deploy on Dokploy**:
    - Add a new project in Dokploy
@@ -107,14 +109,14 @@ This repository has been configured to be deployable on [Dokploy](https://dokplo
 - The application service runs on port 80 internally
 - SSL termination and routing is handled automatically by Dokploy's Traefik proxy
 - Data persistence is managed through Dokploy's volume system
-- The configuration now includes Traefik labels for automatic service discovery
-- Nginx has been removed to leverage Dokploy's built-in proxy capabilities
+- The configuration uses the official `pretix/standalone:stable` image for optimal compatibility
 
 ## Customization
 
 ### Database Version
 
-The setup currently uses PostgreSQL 17 (as of version 1.2.0). Previous versions used different PostgreSQL versions.
+The local development setup uses PostgreSQL 17 for optimal compatibility.
+The Dokploy setup uses PostgreSQL 12 to match official Pretix recommendations.
 
 ### Environment Variables
 

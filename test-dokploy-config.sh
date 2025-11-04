@@ -56,4 +56,18 @@ else
     echo "WARNING: No service definitions found in Docker Compose file."
 fi
 
+# Check that Traefik labels are present
+if grep -q "traefik" docker-compose.dokploy.yml; then
+    echo "Traefik labels found in the app service configuration."
+else
+    echo "WARNING: No Traefik labels found in the Docker Compose file."
+fi
+
+# Check that the app service either uses the pretix/standalone image or has a build configuration
+if grep -q "image: pretix/standalone:stable" docker-compose.dokploy.yml || grep -q "build:" docker-compose.dokploy.yml; then
+    echo "App service correctly configured (using image or build)."
+else
+    echo "WARNING: App service not properly configured."
+fi
+
 echo "Test completed successfully!"
